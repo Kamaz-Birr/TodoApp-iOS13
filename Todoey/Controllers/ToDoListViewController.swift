@@ -14,7 +14,10 @@ class ToDoListViewController: UITableViewController {
     
     // Create an object of the interface to the user's default database, where key-value pairs are stored
     // persistently across app launches
-    let defaults = UserDefaults.standard
+    // let defaults = UserDefaults.standard
+    
+    // Access the user's document directory and grab the first item in the array and create a custom plist called "Items.plist"
+    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist")
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -32,9 +35,11 @@ class ToDoListViewController: UITableViewController {
         newItem3.title = "Destroy the Demogorgon"
         itemArray.append(newItem3)
         
-//        if let items = defaults.array(forKey: "TodoListArray") as? [String] {
+//        if let items = defaults.array(forKey: "TodoListArray") as? [Item] {
 //            itemArray = items
 //        }
+        
+        loadItems()
         
     }
     
@@ -47,13 +52,18 @@ class ToDoListViewController: UITableViewController {
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "ToDoItemCell", for: indexPath)
         
+        let item = itemArray[indexPath.row]
+        
         if #available(iOS 14.0, *) {
             var content = cell.defaultContentConfiguration()
-            content.text = itemArray[indexPath.row].title
+            content.text = item.title
             cell.contentConfiguration = content
         } else {
-            cell.textLabel?.text = itemArray[indexPath.row].title
+            cell.textLabel?.text = item.title
         }
+        
+        // Add or remove a checkmark at the end of each row when selected
+        cell.accessoryType = item.done ? .checkmark : .none
         
         return cell
     }
@@ -62,13 +72,11 @@ class ToDoListViewController: UITableViewController {
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         // print(itemArray[indexPath.row])
+    
+        // Set property of the selected item by toggling the value
+        itemArray[indexPath.row].done = !itemArray[indexPath.row].done
         
-        // add or remove a checkmark at the end of each row when selected
-        if tableView.cellForRow(at: indexPath)?.accessoryType == .checkmark {
-            tableView.cellForRow(at: indexPath)?.accessoryType = .none
-        } else {
-            tableView.cellForRow(at: indexPath)?.accessoryType = .checkmark
-        }
+        saveItems()
         
         // Allow the selected row to "flash select
         tableView.deselectRow(at: indexPath, animated: true)
@@ -85,13 +93,14 @@ class ToDoListViewController: UITableViewController {
             // This happens once the user clicks the Add Item button on the UIAlert
             let newItem = Item()
             newItem.title = textField.text!
+            
             self.itemArray.append(newItem)
             
-            // Save the updated itemArray to the user's defaults
-            self.defaults.set(self.itemArray, forKey: "TodoListArray")
+            // Call saveItems to update the custom plist
+            self.saveItems()
             
-            // Update items-display in the tableview
-            self.tableView.reloadData()
+            // Save the updated itemArray to the user's defaults
+            // self.defaults.set(self.itemArray, forKey: "TodoListArray")
         }
         
         // Add a textfield to the alert pop-up
@@ -105,6 +114,34 @@ class ToDoListViewController: UITableViewController {
         present(alert, animated: true, completion: nil)
     }
     
+    //Mark - Model Manipulation Methods
+    
+    func saveItems() {
+        // Encode itemArray updates to our custom Item datatype, to save into the custom plist (Item.plist)
+        // Encode to store, decode to access
+        let encoder = PropertyListEncoder()
+        do {
+            let data = try encoder.encode(itemArray)
+            try data.write(to: dataFilePath!)
+        } catch {
+            print("Error encoding item array, \(error)")
+        }
+        
+        // Update items-display in the tableview &
+        // Force the Tableview Datasource Methods to run again after didSelectRowAt, so as to enable the .checkmark accesory
+        tableView.reloadData()
+    }
+    
+    func loadItems() {
+        if let data = try? Data(contentsOf: dataFilePath!) {
+            let decoder = PropertyListDecoder()
+            do {
+                itemArray = try decoder.decode([Item].self, from: data)
+            } catch {
+                print("Error decoding item array \(error)")
+            }
+        }
+    }
 
 }
 
