@@ -10,7 +10,7 @@ import UIKit
 
 class ToDoListViewController: UITableViewController {
     
-    var itemArray = ["Find Mike", "Buy Eggos", "Destroy the Demogorgon"]
+    var itemArray = [Item]()
     
     // Create an object of the interface to the user's default database, where key-value pairs are stored
     // persistently across app launches
@@ -20,9 +20,21 @@ class ToDoListViewController: UITableViewController {
         super.viewDidLoad()
         
         // Retrieve User defaults
-        if let items = defaults.array(forKey: "TodoListArray") as? [String] {
-            itemArray = items
-        }
+        let newItem = Item()
+        newItem.title = "Find Mike"
+        itemArray.append(newItem)
+        
+        let newItem2 = Item()
+        newItem2.title = "Buy Eggos"
+        itemArray.append(newItem2)
+        
+        let newItem3 = Item()
+        newItem3.title = "Destroy the Demogorgon"
+        itemArray.append(newItem3)
+        
+//        if let items = defaults.array(forKey: "TodoListArray") as? [String] {
+//            itemArray = items
+//        }
         
     }
     
@@ -37,10 +49,10 @@ class ToDoListViewController: UITableViewController {
         
         if #available(iOS 14.0, *) {
             var content = cell.defaultContentConfiguration()
-            content.text = itemArray[indexPath.row]
+            content.text = itemArray[indexPath.row].title
             cell.contentConfiguration = content
         } else {
-            cell.textLabel?.text = itemArray[indexPath.row]
+            cell.textLabel?.text = itemArray[indexPath.row].title
         }
         
         return cell
@@ -71,7 +83,9 @@ class ToDoListViewController: UITableViewController {
         
         let action = UIAlertAction(title: "Add Item", style: .default) { (action) in
             // This happens once the user clicks the Add Item button on the UIAlert
-            self.itemArray.append(textField.text!)
+            let newItem = Item()
+            newItem.title = textField.text!
+            self.itemArray.append(newItem)
             
             // Save the updated itemArray to the user's defaults
             self.defaults.set(self.itemArray, forKey: "TodoListArray")
