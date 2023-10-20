@@ -123,14 +123,49 @@ class ToDoListViewController: UITableViewController {
         tableView.reloadData()
     }
     
-    func loadItems() {
-        let request: NSFetchRequest<Item> = Item.fetchRequest()
+    func loadItems(with request: NSFetchRequest<Item> = Item.fetchRequest()) {
+        
         do {
             itemArray = try context.fetch(request)
         } catch {
             print("Error fetching data from context \(error)")
         }
+        
+        tableView.reloadData()
     }
 
 }
 
+//MARK: - SearchBar Methods
+
+extension ToDoListViewController: UISearchBarDelegate {
+    
+    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+        let request: NSFetchRequest<Item> = Item.fetchRequest()
+        
+        // Query objects using CoreData
+        // "title CONTAINS %@" = Check if the title property of Item() contains %@. %@ is replaced with the text gotten from the second
+        // argument. In this case, searchBar.text!
+        request.predicate = NSPredicate(format: "title CONTAINS[cd] %@", searchBar.text!)
+        
+        // Sort queried data
+        let sortDescriptor = NSSortDescriptor(key: "title", ascending: true)
+        request.sortDescriptors = [sortDescriptor]
+        
+        // Run request and fetch results
+        loadItems(with: request)
+    }
+    
+    // Reload list items after the search bar is emptied of text
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        if searchBar.text?.count == 0 {
+            loadItems()
+            
+            // To make the cursor go away from the search bar and the keyboard disappear. Grab the main thread first
+            DispatchQueue.main.async {
+                // Now execute this code to make the cursor and keyboard go away
+                searchBar.resignFirstResponder()
+            }
+        }
+    }
+}
