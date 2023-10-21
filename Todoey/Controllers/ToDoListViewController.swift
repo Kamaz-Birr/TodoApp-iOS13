@@ -13,10 +13,18 @@ class ToDoListViewController: UITableViewController {
     
     var itemArray = [Item]()
     
+    var selectedCategory: Category? {
+        // As soon as selectedCategory has a value
+        didSet {
+            loadItems() // READ
+        }
+    }
+    
     // Create an object of the interface to the user's default database, where key-value pairs are stored
     // persistently across app launches
     // let defaults = UserDefaults.standard
     
+    // Create context to communicate with the persistent data and downcast to an Appdelegate object
     let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
 
     override func viewDidLoad() {
@@ -24,9 +32,6 @@ class ToDoListViewController: UITableViewController {
         
         // Access the user's document directory and grab the first item in the array and create a custom plist called "Items.plist"
         print(FileManager.default.urls(for: .documentDirectory, in: .userDomainMask))
-        
-        // READ
-        loadItems()
         
     }
     
@@ -87,6 +92,7 @@ class ToDoListViewController: UITableViewController {
             let newItem = Item(context: self.context)
             newItem.title = textField.text!
             newItem.done = false
+            newItem.parentCategory = self.selectedCategory
             
             self.itemArray.append(newItem)
             
@@ -123,7 +129,16 @@ class ToDoListViewController: UITableViewController {
         tableView.reloadData()
     }
     
-    func loadItems(with request: NSFetchRequest<Item> = Item.fetchRequest()) {
+    func loadItems(with request: NSFetchRequest<Item> = Item.fetchRequest(), predicate: NSPredicate? = nil) {
+        
+        // Filter the Items to be loaded
+        let categoryPredicate = NSPredicate(format: "parentCategory.name MATCHES %@", selectedCategory!.name!)
+        
+        if let additionalPredicate = predicate {
+            request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [categoryPredicate, additionalPredicate])
+        } else {
+            request.predicate = categoryPredicate
+        }
         
         do {
             itemArray = try context.fetch(request)
@@ -146,14 +161,14 @@ extension ToDoListViewController: UISearchBarDelegate {
         // Query objects using CoreData
         // "title CONTAINS %@" = Check if the title property of Item() contains %@. %@ is replaced with the text gotten from the second
         // argument. In this case, searchBar.text!
-        request.predicate = NSPredicate(format: "title CONTAINS[cd] %@", searchBar.text!)
+        let predicate = NSPredicate(format: "title CONTAINS[cd] %@", searchBar.text!)
         
         // Sort queried data
         let sortDescriptor = NSSortDescriptor(key: "title", ascending: true)
         request.sortDescriptors = [sortDescriptor]
         
         // Run request and fetch results
-        loadItems(with: request)
+        loadItems(with: request, predicate: predicate)
     }
     
     // Reload list items after the search bar is emptied of text
