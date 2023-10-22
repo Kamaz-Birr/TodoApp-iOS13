@@ -7,12 +7,12 @@
 //
 
 import UIKit
-import CoreData
+import RealmSwift
 
 class ToDoListViewController: UITableViewController {
     
-    var itemArray = [Item]()
-    
+    var todoItems: Results<Item>?
+    let realm = try! Realm()
     var selectedCategory: Category? {
         // As soon as selectedCategory has a value
         didSet {
@@ -20,42 +20,37 @@ class ToDoListViewController: UITableViewController {
         }
     }
     
-    // Create an object of the interface to the user's default database, where key-value pairs are stored
-    // persistently across app launches
-    // let defaults = UserDefaults.standard
-    
-    // Create context to communicate with the persistent data and downcast to an Appdelegate object
-    let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
-
     override func viewDidLoad() {
         super.viewDidLoad()
         
         // Access the user's document directory and grab the first item in the array and create a custom plist called "Items.plist"
-        print(FileManager.default.urls(for: .documentDirectory, in: .userDomainMask))
+        // print(FileManager.default.urls(for: .documentDirectory, in: .userDomainMask))
         
     }
     
     //MARK: - Tableview Datasource Methods
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return itemArray.count
+        return todoItems?.count ?? 1
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "ToDoItemCell", for: indexPath)
         
-        let item = itemArray[indexPath.row]
-        
-        if #available(iOS 14.0, *) {
-            var content = cell.defaultContentConfiguration()
-            content.text = item.title
-            cell.contentConfiguration = content
+        if let item = todoItems?[indexPath.row] {
+            if #available(iOS 14.0, *) {
+                var content = cell.defaultContentConfiguration()
+                content.text = item.title
+                cell.contentConfiguration = content
+            } else {
+                cell.textLabel?.text = item.title
+            }
+            // Add or remove a checkmark at the end of each row when selected
+            // Ternary operator: value = condition ? valueTrue : valueFalse
+            cell.accessoryType = item.done ? .checkmark : .none
         } else {
-            cell.textLabel?.text = item.title
+            cell.textLabel?.text = "No Items added"
         }
-        
-        // Add or remove a checkmark at the end of each row when selected
-        cell.accessoryType = item.done ? .checkmark : .none
         
         return cell
     }
@@ -63,16 +58,12 @@ class ToDoListViewController: UITableViewController {
     //MARK: - TableView Delegate Methods
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        // print(itemArray[indexPath.row])
+        // print(todoItems[indexPath.row])
     
         // Set property of the selected item by toggling the value. UPDATE
-        itemArray[indexPath.row].done = !itemArray[indexPath.row].done
-        
-        // DELETE (The order matters, so your app doesn't crash
-        // context.delete(itemArray[indexPath.row])
-        // itemArray.remove(at: indexPath.row)
-        
-        saveItems()
+//        todoItems?[indexPath.row].done = !todoItems[indexPath.row].done
+//
+//        saveItems()
         
         // Allow the selected row to "flash select
         tableView.deselectRow(at: indexPath, animated: true)
@@ -87,20 +78,19 @@ class ToDoListViewController: UITableViewController {
         
         let action = UIAlertAction(title: "Add Item", style: .default) { (action) in
             // This happens once the user clicks the Add Item button on the UIAlert
+            if let currentCategory = self.selectedCategory {
+                do {
+                    try self.realm.write {
+                        let newItem = Item()
+                        newItem.title = textField.text!
+                        currentCategory.items.append(newItem)
+                    }
+                } catch {
+                    print("Error saving items \(error)")
+                }
+            }
             
-            // Initialise CoreData Item (CREATE)
-            let newItem = Item(context: self.context)
-            newItem.title = textField.text!
-            newItem.done = false
-            newItem.parentCategory = self.selectedCategory
-            
-            self.itemArray.append(newItem)
-            
-            // Call saveItems to update the custom plist
-            self.saveItems()
-            
-            // Save the updated itemArray to the user's defaults
-            // self.defaults.set(self.itemArray, forKey: "TodoListArray")
+            self.tableView.reloadData()
         }
         
         // Add a textfield to the alert pop-up
@@ -116,36 +106,10 @@ class ToDoListViewController: UITableViewController {
     
     //MARK: - Model Manipulation Methods
     
-    func saveItems() {
-        
-        do {
-            try context.save()
-        } catch {
-            print("Error saving context \(error)")
-        }
-        
-        // Update items-display in the tableview &
-        // Force the Tableview Datasource Methods to run again after didSelectRowAt, so as to enable the .checkmark accesory
-        tableView.reloadData()
-    }
-    
-    func loadItems(with request: NSFetchRequest<Item> = Item.fetchRequest(), predicate: NSPredicate? = nil) {
-        
-        // Filter the Items to be loaded
-        let categoryPredicate = NSPredicate(format: "parentCategory.name MATCHES %@", selectedCategory!.name!)
-        
-        if let additionalPredicate = predicate {
-            request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [categoryPredicate, additionalPredicate])
-        } else {
-            request.predicate = categoryPredicate
-        }
-        
-        do {
-            itemArray = try context.fetch(request)
-        } catch {
-            print("Error fetching data from context \(error)")
-        }
-        
+    func loadItems() {
+
+        todoItems = selectedCategory?.items.sorted(byKeyPath: "title", ascending: true)
+
         tableView.reloadData()
     }
 
@@ -153,34 +117,34 @@ class ToDoListViewController: UITableViewController {
 
 //MARK: - SearchBar Methods
 
-extension ToDoListViewController: UISearchBarDelegate {
-    
-    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
-        let request: NSFetchRequest<Item> = Item.fetchRequest()
-        
-        // Query objects using CoreData
-        // "title CONTAINS %@" = Check if the title property of Item() contains %@. %@ is replaced with the text gotten from the second
-        // argument. In this case, searchBar.text!
-        let predicate = NSPredicate(format: "title CONTAINS[cd] %@", searchBar.text!)
-        
-        // Sort queried data
-        let sortDescriptor = NSSortDescriptor(key: "title", ascending: true)
-        request.sortDescriptors = [sortDescriptor]
-        
-        // Run request and fetch results
-        loadItems(with: request, predicate: predicate)
-    }
-    
-    // Reload list items after the search bar is emptied of text
-    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
-        if searchBar.text?.count == 0 {
-            loadItems()
-            
-            // To make the cursor go away from the search bar and the keyboard disappear. Grab the main thread first
-            DispatchQueue.main.async {
-                // Now execute this code to make the cursor and keyboard go away
-                searchBar.resignFirstResponder()
-            }
-        }
-    }
-}
+//extension ToDoListViewController: UISearchBarDelegate {
+//
+//    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+//        let request: NSFetchRequest<Item> = Item.fetchRequest()
+//
+//        // Query objects using CoreData
+//        // "title CONTAINS %@" = Check if the title property of Item() contains %@. %@ is replaced with the text gotten from the second
+//        // argument. In this case, searchBar.text!
+//        let predicate = NSPredicate(format: "title CONTAINS[cd] %@", searchBar.text!)
+//
+//        // Sort queried data
+//        let sortDescriptor = NSSortDescriptor(key: "title", ascending: true)
+//        request.sortDescriptors = [sortDescriptor]
+//
+//        // Run request and fetch results
+//        loadItems(with: request, predicate: predicate)
+//    }
+//
+//    // Reload list items after the search bar is emptied of text
+//    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+//        if searchBar.text?.count == 0 {
+//            loadItems()
+//
+//            // To make the cursor go away from the search bar and the keyboard disappear. Grab the main thread first
+//            DispatchQueue.main.async {
+//                // Now execute this code to make the cursor and keyboard go away
+//                searchBar.resignFirstResponder()
+//            }
+//        }
+//    }
+//}
