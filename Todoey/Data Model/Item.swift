@@ -17,6 +17,7 @@ class Item: Object {
     // @objc tag means this behaviour comes from the Objective-C API
     @objc dynamic var title: String = ""
     @objc dynamic var done: Bool = false
+    @objc dynamic var dateCreated: Date?
     
     // Create the inverse relationship
     var parentCategory = LinkingObjects(fromType: Category.self, property: "items")

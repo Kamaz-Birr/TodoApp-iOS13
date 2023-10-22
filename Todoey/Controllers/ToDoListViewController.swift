@@ -58,14 +58,21 @@ class ToDoListViewController: UITableViewController {
     //MARK: - TableView Delegate Methods
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        // print(todoItems[indexPath.row])
-    
-        // Set property of the selected item by toggling the value. UPDATE
-//        todoItems?[indexPath.row].done = !todoItems[indexPath.row].done
-//
-//        saveItems()
+        if let item = todoItems?[indexPath.row] {
+            do {
+                try realm.write {
+                    // To DELETE objects
+                    //realm.delete(item)
+                    item.done = !item.done
+                }
+            } catch {
+                print("Error saving 'done' status \(error)")
+            }
+        }
         
-        // Allow the selected row to "flash select
+        tableView.reloadData()
+        
+        // Allow the selected row to "flash select"
         tableView.deselectRow(at: indexPath, animated: true)
     }
     
@@ -83,6 +90,7 @@ class ToDoListViewController: UITableViewController {
                     try self.realm.write {
                         let newItem = Item()
                         newItem.title = textField.text!
+                        newItem.dateCreated = Date()
                         currentCategory.items.append(newItem)
                     }
                 } catch {
@@ -115,36 +123,32 @@ class ToDoListViewController: UITableViewController {
 
 }
 
-//MARK: - SearchBar Methods
+//MARK: - SearchBar Methods. Querying the Database (Realm)
 
-//extension ToDoListViewController: UISearchBarDelegate {
-//
-//    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
-//        let request: NSFetchRequest<Item> = Item.fetchRequest()
-//
-//        // Query objects using CoreData
-//        // "title CONTAINS %@" = Check if the title property of Item() contains %@. %@ is replaced with the text gotten from the second
-//        // argument. In this case, searchBar.text!
-//        let predicate = NSPredicate(format: "title CONTAINS[cd] %@", searchBar.text!)
-//
-//        // Sort queried data
-//        let sortDescriptor = NSSortDescriptor(key: "title", ascending: true)
-//        request.sortDescriptors = [sortDescriptor]
-//
-//        // Run request and fetch results
-//        loadItems(with: request, predicate: predicate)
-//    }
-//
-//    // Reload list items after the search bar is emptied of text
-//    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
-//        if searchBar.text?.count == 0 {
-//            loadItems()
-//
-//            // To make the cursor go away from the search bar and the keyboard disappear. Grab the main thread first
-//            DispatchQueue.main.async {
-//                // Now execute this code to make the cursor and keyboard go away
-//                searchBar.resignFirstResponder()
-//            }
-//        }
-//    }
-//}
+extension ToDoListViewController: UISearchBarDelegate {
+
+    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+        // Set new value of todoItems to be equal to the filtered previous value and sort the queried data
+        /* "title CONTAINS %@" = Check if the title property of Item() contains %@. %@ is replaced with the text gotten from the second
+         argument. In this case, searchBar.text! */
+        // todoItems = todoItems?.filter("title CONTAINS[cd] %@", searchBar.text!).sorted(byKeyPath: "title", ascending: true)
+        
+        // Sort by date created
+        todoItems = todoItems?.filter("title CONTAINS[cd] %@", searchBar.text!).sorted(byKeyPath: "dateCreated", ascending: true)
+        
+        tableView.reloadData()
+    }
+
+    // Reload list items after the search bar is emptied of text
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        if searchBar.text?.count == 0 {
+            loadItems()
+
+            // To make the cursor go away from the search bar and the keyboard disappear. Grab the main thread first
+            DispatchQueue.main.async {
+                // Now execute this code to make the cursor and keyboard go away
+                searchBar.resignFirstResponder()
+            }
+        }
+    }
+}
