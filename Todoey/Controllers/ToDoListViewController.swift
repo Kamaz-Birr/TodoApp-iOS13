@@ -9,7 +9,7 @@
 import UIKit
 import RealmSwift
 
-class ToDoListViewController: UITableViewController {
+class ToDoListViewController: SwipeTableViewController {
     
     var todoItems: Results<Item>?
     let realm = try! Realm()
@@ -26,6 +26,8 @@ class ToDoListViewController: UITableViewController {
         // Access the user's document directory and grab the first item in the array and create a custom plist called "Items.plist"
         // print(FileManager.default.urls(for: .documentDirectory, in: .userDomainMask))
         
+        // Increase the size of the cells
+        tableView.rowHeight = 70.0
     }
     
     //MARK: - Tableview Datasource Methods
@@ -35,7 +37,8 @@ class ToDoListViewController: UITableViewController {
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "ToDoItemCell", for: indexPath)
+        // Tap into the super class
+        let cell = super.tableView(tableView, cellForRowAt: indexPath)
         
         if let item = todoItems?[indexPath.row] {
             if #available(iOS 14.0, *) {
@@ -119,6 +122,18 @@ class ToDoListViewController: UITableViewController {
         todoItems = selectedCategory?.items.sorted(byKeyPath: "title", ascending: true)
 
         tableView.reloadData()
+    }
+    
+    override func updateModel(at indexPath: IndexPath) {
+        if let items = todoItems?[indexPath.row] {
+            do {
+                try realm.write {
+                    realm.delete(items)
+                }
+            } catch {
+                print("Error deleting item \(error)")
+            }
+        }
     }
 
 }
