@@ -12,6 +12,7 @@ import RealmSwift
 class Category: Object {
     
     @objc dynamic var name: String = ""
+    @objc dynamic var bgColour: String = ""
     
     // Create relationships between the data models
     // 1. The forward relationship (Category >> Item) ie in every category there is a property that points to a list of Item objects

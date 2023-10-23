@@ -17,6 +17,7 @@ class SwipeTableViewController: UITableViewController, SwipeTableViewCellDelegat
         super.viewDidLoad()
         
         // If you wanted to make the cell height the same in both the category and the todolist view controllers, do it here since both inherit from this class
+        tableView.separatorStyle = .none
         tableView.rowHeight = 90
     }
     

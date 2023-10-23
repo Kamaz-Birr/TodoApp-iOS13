@@ -8,6 +8,7 @@
 
 import UIKit
 import RealmSwift
+import Chameleon
 
 class CategoryViewController: SwipeTableViewController {
     
@@ -16,6 +17,7 @@ class CategoryViewController: SwipeTableViewController {
     // This Results data type is an auto-updating container type from Realm, thus there is no need to explicitly append new values
     // in the addButtonPressed fuction. Option-click 'Results' for more info
     var categoryArray: Results<Category>?
+    let defaultColour = "1D9BF6"
 
     override func viewDidLoad() {
         
@@ -25,6 +27,22 @@ class CategoryViewController: SwipeTableViewController {
         
         // Increase the size of the cells
         tableView.rowHeight = 80.0
+    }
+    
+    override func viewDidAppear(_ animated: Bool) {
+        
+        guard let navBar = navigationController?.navigationBar else {
+            fatalError("Navigation Controller does not exist")
+        }
+        
+        let appearance = UINavigationBarAppearance()
+        appearance.configureWithOpaqueBackground()
+        appearance.backgroundColor = UIColor(hexString: defaultColour)
+        appearance.largeTitleTextAttributes = [NSAttributedString.Key.foregroundColor : UIColor(contrastingBlackOrWhiteColorOn: appearance.backgroundColor!, isFlat: true)]
+        // Change the reduced title text on scrolling to match the colour of the large title text
+        appearance.titleTextAttributes = [NSAttributedString.Key.foregroundColor : UIColor(contrastingBlackOrWhiteColorOn: appearance.backgroundColor!, isFlat: true)]
+        navBar.standardAppearance = appearance
+        navBar.scrollEdgeAppearance = navBar.standardAppearance
     }
     
     //MARK: - Add New Category
@@ -39,6 +57,7 @@ class CategoryViewController: SwipeTableViewController {
             
             let newCategory = Category()
             newCategory.name = textField.text!
+            newCategory.bgColour = UIColor.randomFlat().hexValue()
             
             self.save(category: newCategory)
         }
@@ -68,8 +87,12 @@ class CategoryViewController: SwipeTableViewController {
         
         let category = categoryArray?[indexPath.row]
         
+        // If for some reason no BG colour is found in the optional value category, use the default colour
+        cell.backgroundColor = UIColor(hexString: category?.bgColour ?? defaultColour)
+        
         if #available(iOS 14.0, *) {
             var content = cell.defaultContentConfiguration()
+            content.textProperties.color = UIColor(contrastingBlackOrWhiteColorOn: cell.backgroundColor!, isFlat: true)
             content.text = category?.name ?? "No Categories Added Yet"
             cell.contentConfiguration = content
         } else {

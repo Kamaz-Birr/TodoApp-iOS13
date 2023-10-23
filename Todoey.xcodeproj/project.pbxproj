@@ -13,6 +13,7 @@
 		641272782AE49EB600F703DD /* Category.swift in Sources */ = {isa = PBXBuildFile; fileRef = 641272772AE49EB600F703DD /* Category.swift */; };
 		642C5BC52AE5830400BF264F /* SwipeCellKit in Frameworks */ = {isa = PBXBuildFile; productRef = 642C5BC42AE5830400BF264F /* SwipeCellKit */; };
 		642C5BC92AE5CA9D00BF264F /* SwipeTableViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 642C5BC82AE5CA9D00BF264F /* SwipeTableViewController.swift */; };
+		642C5BCC2AE5FAB300BF264F /* Chameleon in Frameworks */ = {isa = PBXBuildFile; productRef = 642C5BCB2AE5FAB300BF264F /* Chameleon */; };
 		646429842AE2154A00B70A56 /* CategoryViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 646429832AE2154A00B70A56 /* CategoryViewController.swift */; };
 		EB2BE4FA239524DB00FB933B /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB2BE4F9239524DB00FB933B /* AppDelegate.swift */; };
 		EB2BE4FE239524DB00FB933B /* ToDoListViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB2BE4FD239524DB00FB933B /* ToDoListViewController.swift */; };
@@ -41,6 +42,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				641272722AE36B8800F703DD /* RealmSwift in Frameworks */,
+				642C5BCC2AE5FAB300BF264F /* Chameleon in Frameworks */,
 				642C5BC52AE5830400BF264F /* SwipeCellKit in Frameworks */,
 				641272702AE36B8800F703DD /* Realm in Frameworks */,
 			);
@@ -134,6 +136,7 @@
 				6412726F2AE36B8800F703DD /* Realm */,
 				641272712AE36B8800F703DD /* RealmSwift */,
 				642C5BC42AE5830400BF264F /* SwipeCellKit */,
+				642C5BCB2AE5FAB300BF264F /* Chameleon */,
 			);
 			productName = Todoey;
 			productReference = EB2BE4F6239524DB00FB933B /* Todoey.app */;
@@ -167,6 +170,7 @@
 			packageReferences = (
 				6412726E2AE36B8800F703DD /* XCRemoteSwiftPackageReference "realm-swift" */,
 				642C5BC32AE5830400BF264F /* XCRemoteSwiftPackageReference "SwipeCellKit" */,
+				642C5BCA2AE5FAB300BF264F /* XCRemoteSwiftPackageReference "ChameleonFramework" */,
 			);
 			productRefGroup = EB2BE4F7239524DB00FB933B /* Products */;
 			projectDirPath = "";
@@ -418,6 +422,14 @@
 				minimumVersion = 2.7.1;
 			};
 		};
+		642C5BCA2AE5FAB300BF264F /* XCRemoteSwiftPackageReference "ChameleonFramework" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/starkdmi/ChameleonFramework.git";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -435,6 +447,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 642C5BC32AE5830400BF264F /* XCRemoteSwiftPackageReference "SwipeCellKit" */;
 			productName = SwipeCellKit;
+		};
+		642C5BCB2AE5FAB300BF264F /* Chameleon */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 642C5BCA2AE5FAB300BF264F /* XCRemoteSwiftPackageReference "ChameleonFramework" */;
+			productName = Chameleon;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

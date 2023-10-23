@@ -8,6 +8,7 @@
 
 import UIKit
 import RealmSwift
+import Chameleon
 
 class ToDoListViewController: SwipeTableViewController {
     
@@ -20,6 +21,9 @@ class ToDoListViewController: SwipeTableViewController {
         }
     }
     
+    @IBOutlet weak var searchBar: UISearchBar!
+    
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -29,6 +33,32 @@ class ToDoListViewController: SwipeTableViewController {
         // Increase the size of the cells
         tableView.rowHeight = 70.0
     }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        
+        if let colourHex = selectedCategory?.bgColour {
+            guard let navBar = navigationController?.navigationBar else {
+                fatalError("Navigation Controller does not exist")
+            }
+            
+            title = selectedCategory!.name
+            
+            let appearance = UINavigationBarAppearance()
+            appearance.configureWithOpaqueBackground()
+            appearance.backgroundColor = UIColor(hexString: colourHex)
+            appearance.largeTitleTextAttributes = [NSAttributedString.Key.foregroundColor : UIColor(contrastingBlackOrWhiteColorOn: appearance.backgroundColor!, isFlat: true)]
+            // Change the reduced title text on scrolling to match the colour of the large title text
+            appearance.titleTextAttributes = [NSAttributedString.Key.foregroundColor : UIColor(contrastingBlackOrWhiteColorOn: appearance.backgroundColor!, isFlat: true)]
+            navBar.standardAppearance = appearance
+            navBar.scrollEdgeAppearance = navBar.standardAppearance
+            navBar.tintColor = UIColor(contrastingBlackOrWhiteColorOn: UIColor(hexString: colourHex)!, isFlat: true)
+            
+            searchBar.barTintColor = UIColor(hexString: colourHex)
+            searchBar.searchTextField.backgroundColor = UIColor.flatWhite()
+        }
+    }
+    
     
     //MARK: - Tableview Datasource Methods
     
@@ -41,13 +71,22 @@ class ToDoListViewController: SwipeTableViewController {
         let cell = super.tableView(tableView, cellForRowAt: indexPath)
         
         if let item = todoItems?[indexPath.row] {
-            if #available(iOS 14.0, *) {
-                var content = cell.defaultContentConfiguration()
-                content.text = item.title
-                cell.contentConfiguration = content
-            } else {
-                cell.textLabel?.text = item.title
+            if let colour = UIColor(hexString: selectedCategory!.bgColour)?.darken(byPercentage: CGFloat(indexPath.row) / CGFloat(todoItems!.count)) {
+                cell.backgroundColor = colour
+                
+                if #available(iOS 14.0, *) {
+                    var content = cell.defaultContentConfiguration()
+                    content.textProperties.color = UIColor(contrastingBlackOrWhiteColorOn: colour, isFlat: true)
+                    content.text = item.title
+                    cell.contentConfiguration = content
+                } else {
+                    cell.textLabel?.text = item.title
+                }
             }
+            
+                        
+            
+            
             // Add or remove a checkmark at the end of each row when selected
             // Ternary operator: value = condition ? valueTrue : valueFalse
             cell.accessoryType = item.done ? .checkmark : .none
